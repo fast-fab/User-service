@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL")
+}
+
+model Seller {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  shopName    String?
+  ownerName   String?
+  email       String    @unique
+  phone       String?    
+  address     String?
+  city        String?
+  state       String?
+  pincode     String?
+  gstNumber   String?
+  isVerified  Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  categories  String[]
+  openTime    String?
+  closeTime   String?
+  products    Product[]
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+  password    String
+  latitude    Float?
+  longitude   Float?
+  fcmToken    String?
+  responses   OrderResponse[]
+}
+
+
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  sellerId  String
+  seller    Seller   @relation(fields: [sellerId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  sellerId  String
+  seller    Seller   @relation(fields: [sellerId], references: [id])
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  metadata  Json?
+}
+model OrderResponse {
+  id           String   @id @default(uuid())
+  orderId      String
+  sellerId     String
+  seller       Seller   @relation(fields: [sellerId], references: [id])
+  response     Boolean
+  responseTime DateTime
+  createdAt    DateTime @default(now())
+  @@unique([orderId, sellerId])
+}
+
+model user{
+  id      String  @id @default(uuid()) @unique
+  phone   String  @unique
+  name    String?
+  Orders  Order[]
+  Address String[] //to add more than one address
+  lang    String?
+  long    String?
+}
+
+model Order {
+  orderId  String     @default(uuid()) @id
+  userId   String
+  user     user       @relation(fields: [userId], references: [id])
+  items    OrderItem[]
+}
+
+model OrderItem {
+  id        String  @default(uuid()) @id
+  orderId   String
+  productId String  @unique
+  qty       Int
+  cost      Float
+  status    STATUS @default(ORDERED)
+  order     Order  @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+}
+model Product {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  description String?
+  price       Float
+  stock       Int
+  category    String
+  images      String[]
+  sellerId    String
+  seller      Seller   @relation(fields: [sellerId], references: [id])
+  Products    Returns[]
+  
+}
+
+model Returns{
+  id          String   @default(uuid()) @id
+  ProductId   String 
+  Product     Product  @relation(references: [id],fields: [ProductId])
+  Status      STATUS   @default(RETURNED)
+  cost        Float
+  totalCost   Float
+}
+
+enum STATUS{
+  ORDERED
+  DELIVERED
+  RETURNED
+}
