@@ -1,4 +1,4 @@
-const Kafka = require('kafkajs');
+const { Kafka } = require('kafkajs');
 const kafkaConfig = require('../../config/kafka.config');
 const { PrismaClient } = require('@prisma/client'); // Changed to CommonJS style
 const prisma = new PrismaClient();
@@ -27,7 +27,7 @@ class OrderPushingService {
   async produce(itemId, orderId, Qty, userLang, userLong) {
     try {
       await this.connect();
-      const producingOrderReqToShop = await this.producer.send({ // Added this.
+      const producingOrderReqToShop = await this.producer.send({ 
         topic: kafkaConfig.topics.orderNotifications, // Added topics. based on your consumer code
         messages: [
           { 

@@ -1,11 +1,16 @@
-const Router = require('express');
+const express = require('express');
 const { PrismaClient } = require('@prisma/client');
-const router = Router();
+const app = express();
 const prisma = new PrismaClient();
+const kafkaService=require("../kafka/producer/orderPushing.producer")
+const kafka=new kafkaService()
 // const authMiddleware=require("../middleware/auth.middleware")
 
+// 1. NEED LOCATION THING / GOOGLE API TO GIVE OUT LANG AND LAT
+// 2. push to kafka's particular topic
+app.use(express.json())
 
-router.get("/bulk", async (req, res) => {
+app.get("/bulk", async (req, res) => {
     try {
         const products = await prisma.product.findMany();
         res.json(products);
@@ -14,7 +19,7 @@ router.get("/bulk", async (req, res) => {
     }
 });
 
-router.get("/bulk/:id", async (req, res) => {
+app.get("/bulk/:id", async (req, res) => {
     const { id } = req.params;
     try {
         const product = await prisma.product.findUnique({
@@ -27,13 +32,16 @@ router.get("/bulk/:id", async (req, res) => {
     }
 });
 
-router.post('/createOrder',async (req, res) => {
+app.post('/createOrder',async (req, res) => {
     try {
+        console.log("hi")        
         const { userId, items } = req.body;
 
         if (!userId || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: "Invalid request format" });
         }
+        // console.log(items.forEach(item => console.log("productId", item.productId)));
+        items.forEach(item => console.log("productId", item.productId));
         const order = await prisma.order.create({
             data: {
                 userId,
@@ -48,7 +56,13 @@ router.post('/createOrder',async (req, res) => {
             },
             include: { items: true }
         });
+        const userLang=12.2
+        const userLong=12.1
+        console.log("hii")
+        const response=await kafka.produce(userId, items.orderId, items.Qty, userLang, userLong)
+        console.log("hi",response)
         // send kafka 
+
         res.status(201).json({ message: "Order placed", order });
     } catch (error) {
         console.error(error);
@@ -56,7 +70,7 @@ router.post('/createOrder',async (req, res) => {
     }
 });
 
-router.post("/return", async (req, res) => {
+app.post("/return", async (req, res) => {
     try {
         const {  productId, qty, cost } = req.body;
 
@@ -107,7 +121,7 @@ router.post("/return", async (req, res) => {
                 totalCost: totalCost
             }
         });
-
+        // send kafka
         res.status(201).json({ message: "Return processed", returnedItem });
 
     } catch (error) {
@@ -116,7 +130,7 @@ router.post("/return", async (req, res) => {
     }
 });
 
-router.get("/previousOrders/:userId", async (req, res) => {
+app.get("/previousOrders/:userId", async (req, res) => {
     const { userId } = req.params;
 
     try {
@@ -136,4 +150,5 @@ router.get("/previousOrders/:userId", async (req, res) => {
     }
 });
 
-module.exports=router
+// module.exports=app
+app.listen(3000)

@@ -95,7 +95,7 @@ model Order {
 model OrderItem {
   id        String  @default(uuid()) @id
   orderId   String
-  productId String  @unique
+  productId String  
   qty       Int
   cost      Float
   status    STATUS @default(ORDERED)
