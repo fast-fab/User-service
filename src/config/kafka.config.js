@@ -3,6 +3,7 @@ const kafkaConfig = {
     brokers: process.env.KAFKA_BROKERS?.split(',') || ['localhost:9093'],
     topics: {
       orderNotifications: 'order-notifications',
+      returnNotifications:'return-order'
     }
   }; 
   

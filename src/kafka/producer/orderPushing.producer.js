@@ -43,6 +43,26 @@ class OrderPushingService {
       throw error;
     }
   }
+
+  async returnProduction(lang,long,userId,orderId){
+    try {
+      await this.connect()
+      const messages = ({
+        key:userId,
+        value:JSON.stringify({cost,qty,lang, long })
+      })
+      const messageString = JSON.stringify(messages)
+      console.log("Sending to Kafka:", messageString);
+      const producingOrderReqToShop = await this.producer.send({
+        topic: kafkaConfig.topics.orderNotifications,
+        messages: [{ key: orderId, value: messageString }]
+      });
+      return producingOrderReqToShop;
+    } catch (error) {
+      
+    }
+  }
+
 }
 
-module.exports = OrderPushingService; // Added export
+module.exports = OrderPushingService;
