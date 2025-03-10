@@ -1,6 +1,6 @@
 const kafkaConfig = {
     clientId: 'user-service',
-    brokers: process.env.KAFKA_BROKERS?.split(',') || ['localhost:9092'],
+    brokers: process.env.KAFKA_BROKERS?.split(',') || ['localhost:9093'],
     topics: {
       orderNotifications: 'order-notifications',
     }

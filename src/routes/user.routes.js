@@ -2,10 +2,11 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const app = express();
 const prisma = new PrismaClient();
-const kafkaService=require("../kafka/producer/orderPushing.producer")
-const kafka=new kafkaService()
-const axios=require('axios')
-const authMiddleware=require("../middleware/auth.middleware")
+const kafkaService = require("../kafka/producer/orderPushing.producer")
+const kafka = new kafkaService()
+const axios = require('axios')
+const authMiddleware = require("../middleware/auth.middleware")
+const STATUS_TYPE = require("../utils/objects")
 
 // 1. NEED LOCATION THING / GOOGLE API TO GIVE OUT LANG AND LAT
 // 2. push to kafka's particular topic
@@ -13,7 +14,7 @@ app.use(express.json())
 
 app.get("/bulk", async (req, res) => {
     try {
-        const getItems=axios.get("https://api.fastandfab.in/api/products/all")
+        const getItems = axios.get("https://api.fastandfab.in/api/products/all")
         res.json(getItems);
     } catch (error) {
         console.log(error.message)
@@ -24,17 +25,16 @@ app.get("/bulk", async (req, res) => {
 // yeh bohot slow hojayega
 app.get("/bulk/:id", async (req, res) => {
     try {
-        const getItems=axios.get("https://api.fastandfab.in/api/products/:productId")
-        if (!getItems){ return res.status(404).json({ error: "Product not found" });}
+        const getItems = axios.get("https://api.fastandfab.in/api/products/:productId")
+        if (!getItems) { return res.status(404).json({ error: "Product not found" }); }
         res.json(getItems);
     } catch (error) {
         res.status(500).json({ error: "Server error" });
     }
 });
 
-app.post('/createOrder',authMiddleware,async (req, res) => {
+app.post('/createOrder', authMiddleware, async (req, res) => {
     try {
-        console.log("hi")        
         const { userId, items } = req.body;
 
         if (!userId || !Array.isArray(items) || items.length === 0) {
@@ -49,18 +49,23 @@ app.post('/createOrder',authMiddleware,async (req, res) => {
                         productId: item.productId,
                         qty: item.qty,
                         cost: item.cost,
-                        status: ORDERED
+                        status: STATUS_TYPE.ORDERED
                     }))
                 }
             },
             include: { items: true }
         });
-        const userLang=12.2
-        const userLong=12.1
-        console.log("hii")
-        const response=await kafka.produce(userId, items.orderId, items.Qty, userLang, userLong)
-        console.log("hi",response)
+        const userLang = 12.2
+        const userLong = 12.1
         // send kafka 
+        // Send to Kafka
+        try {
+            const pushData = await kafka.produce(items, userId, userLang, userLong);
+            console.log(pushData);
+        } catch (error) {
+            console.error("Error sending data to Kafka:", error);
+        }
+
 
         res.status(201).json({ message: "Order placed", order });
     } catch (error) {
@@ -71,9 +76,9 @@ app.post('/createOrder',authMiddleware,async (req, res) => {
 
 app.post("/return", async (req, res) => {
     try {
-        const {  productId, qty, cost } = req.body;
+        const { productId, qty, cost } = req.body;
 
-        if ( !productId || !qty || !cost) {
+        if (!productId || !qty || !cost) {
             return res.status(400).json({ error: "Invalid return request" });
         }
 
@@ -114,7 +119,7 @@ app.post("/return", async (req, res) => {
 
         const returnedItem = await prisma.returns.create({
             data: {
-                ProductId: product.id, 
+                ProductId: product.id,
                 cost: cost,
                 Status: "RETURNED",
                 totalCost: totalCost

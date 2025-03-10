@@ -1,7 +1,5 @@
 const { Kafka } = require('kafkajs');
-const kafkaConfig = require('../../config/kafka.config');
-const { PrismaClient } = require('@prisma/client'); // Changed to CommonJS style
-const prisma = new PrismaClient();
+const { kafkaConfig } = require('../../config/kafka.config');
 
 class OrderPushingService {
   constructor() {
@@ -9,7 +7,7 @@ class OrderPushingService {
       clientId: kafkaConfig.clientId,
       brokers: kafkaConfig.brokers
     });
-    this.producer = this.kafka.producer({ // Changed produce to producer
+    this.producer = this.kafka.producer({
       allowAutoTopicCreation: true
     });
   }
@@ -24,25 +22,23 @@ class OrderPushingService {
     }
   }
 
-  async produce(itemId, orderId, Qty, userLang, userLong) {
+  async produce(items, orderId, userLang, userLong) {
     try {
       await this.connect();
-      const producingOrderReqToShop = await this.producer.send({ 
-        topic: kafkaConfig.topics.orderNotifications, // Added topics. based on your consumer code
-        messages: [
-          { 
-            key: orderId, 
-            value: JSON.stringify({ // Wrapped values in an object
-              itemId, 
-              Qty, 
-              userLang, 
-              userLong
-            })
-          },
-        ],
+      const messages = items.map(({ productId, Qty,cost }) => ({
+        key: orderId, 
+        value: JSON.stringify({ productId, Qty,cost, userLang, userLong })
+    }));
+      const messageString = JSON.stringify(messages)
+      console.log("Sending to Kafka:", messageString);
+      const producingOrderReqToShop = await this.producer.send({
+        topic: kafkaConfig.topics.orderNotifications,
+        messages: [{ key: orderId, value: messageString }]
       });
-      console.log(producingOrderReqToShop);
-    } catch (error) { // Changed e to error to match the log statement
+
+      return producingOrderReqToShop;
+    }
+    catch (error) {
       console.error('Producer connection failed:', error);
       throw error;
     }
