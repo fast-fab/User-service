@@ -76,7 +76,9 @@ router.post('/createOrder', authMiddleware, async (req, res) => {
 
 router.post("/return",authMiddleware, async (req, res) => {
     try {
-        const {orderId,idArticle,qty,cost,status} = req.body;
+        const {orderId,idArticle,qty} = req.body;
+
+        const userId=req.user.id
 
         if (!orderId ) {
             return res.status(400).json({ error: "Invalid return request" });
@@ -92,22 +94,18 @@ router.post("/return",authMiddleware, async (req, res) => {
         if(article.qty<qty){
             return res.send("qty returned cannot be more than ordered")
         }
-        
+        console.log(article.id)
         const totalCost = qty * article.cost;
 
         const returnedItem = await prisma.returns.create({
             data: {
-                ProductId: article.id,
+                ProductId: idArticle,
                 qty: qty,
                 totalCost: totalCost
             }
         });
         const data=await prisma.user.findUnique({
-            where:{userId:id},
-            data:{
-                long,
-                lang
-            }
+            where:{id:userId}
         })
         console.log(data.lang)
 

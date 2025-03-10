@@ -23,6 +23,7 @@ model user{
   Address   String[] //to add more than one address
   lang      String?
   long      String?
+  Returns   Returns[]
 }
 
 model Order {
@@ -45,10 +46,12 @@ model OrderItem {
 
 model Returns{
   id          String   @default(uuid()) @id
+  userId      String
+  user        user      @relation(fields: [userId],references: [id])
   ProductId   String 
   Status      STATUS   @default(RETURNED)
-  cost        Float
   totalCost   Float
+  qty         Int
 }
 
 enum STATUS{
