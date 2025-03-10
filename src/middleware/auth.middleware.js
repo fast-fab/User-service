@@ -1,11 +1,13 @@
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-import { AuthError } from '../../src/utils/errors.js';
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+const { PrismaClient } = require("@prisma/client");
+const { AuthError } =require('../../src/utils/errors.js');
 
 const prisma = new PrismaClient();
-// remove seller from here
-// add user ka phone number to sign the token 
-export const authMiddleware = async (req, res, next) => {
+
+const authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     
@@ -18,14 +20,14 @@ export const authMiddleware = async (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
-      const seller = await prisma.seller.findUnique({
+      const user = await prisma.user.findUnique({
         where: { id: decoded.userId }
       });
 
-      if (!seller) {
+      if (!user) {
         throw new AuthError('Seller not found');
       }
-      req.seller = seller;
+      req.user = user;
       next();
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
@@ -43,3 +45,5 @@ export const authMiddleware = async (req, res, next) => {
     return res.status(500).json({ error: 'Authentication error' });
   }
 };
+
+module.exports=authMiddleware

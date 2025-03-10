@@ -4,7 +4,8 @@ const app = express();
 const prisma = new PrismaClient();
 const kafkaService=require("../kafka/producer/orderPushing.producer")
 const kafka=new kafkaService()
-// const authMiddleware=require("../middleware/auth.middleware")
+const axios=require('axios')
+const authMiddleware=require("../middleware/auth.middleware")
 
 // 1. NEED LOCATION THING / GOOGLE API TO GIVE OUT LANG AND LAT
 // 2. push to kafka's particular topic
@@ -12,27 +13,26 @@ app.use(express.json())
 
 app.get("/bulk", async (req, res) => {
     try {
-        const products = await prisma.product.findMany();
-        res.json(products);
+        const getItems=axios.get("https://api.fastandfab.in/api/products/all")
+        res.json(getItems);
     } catch (error) {
+        console.log(error.message)
         res.status(500).json({ error: "Server error" });
     }
 });
 
+// yeh bohot slow hojayega
 app.get("/bulk/:id", async (req, res) => {
-    const { id } = req.params;
     try {
-        const product = await prisma.product.findUnique({
-            where: { id }
-        });
-        if (!product) return res.status(404).json({ error: "Product not found" });
-        res.json(product);
+        const getItems=axios.get("https://api.fastandfab.in/api/products/:productId")
+        if (!getItems){ return res.status(404).json({ error: "Product not found" });}
+        res.json(getItems);
     } catch (error) {
         res.status(500).json({ error: "Server error" });
     }
 });
 
-app.post('/createOrder',async (req, res) => {
+app.post('/createOrder',authMiddleware,async (req, res) => {
     try {
         console.log("hi")        
         const { userId, items } = req.body;
@@ -40,7 +40,6 @@ app.post('/createOrder',async (req, res) => {
         if (!userId || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: "Invalid request format" });
         }
-        // console.log(items.forEach(item => console.log("productId", item.productId)));
         items.forEach(item => console.log("productId", item.productId));
         const order = await prisma.order.create({
             data: {
@@ -50,7 +49,7 @@ app.post('/createOrder',async (req, res) => {
                         productId: item.productId,
                         qty: item.qty,
                         cost: item.cost,
-                        status: "ORDERED"
+                        status: ORDERED
                     }))
                 }
             },
