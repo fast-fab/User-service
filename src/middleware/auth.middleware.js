@@ -25,7 +25,7 @@ const authMiddleware = async (req, res, next) => {
       });
 
       if (!user) {
-        throw new AuthError('Seller not found');
+        throw new AuthError('User not found');
       }
       req.user = user;
       next();

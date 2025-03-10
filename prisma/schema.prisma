@@ -34,12 +34,11 @@ model Order {
 
 model OrderItem {
   id        String  @default(uuid()) @id
-  orderId   String
-  productId String  
+  productId String  @unique @default(uuid())
   qty       Int
   cost      Float
   status    STATUS @default(ORDERED)
-  order     Order  @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+  order     Order  @relation(fields: [id], references: [orderId], onDelete: Cascade)
 }
 
 
