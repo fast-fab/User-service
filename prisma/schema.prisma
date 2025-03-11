@@ -21,8 +21,9 @@ model user{
   name      String?
   Orders    Order[]
   Address   String[] //to add more than one address
-  lang      String?
-  long      String?
+  lat       Float?
+  long      Float?
+  pincode   Int     @default(0)
   Returns   Returns[]
 }
 

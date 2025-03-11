@@ -1,12 +1,11 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const router = express.Router()
-// router.use(express.json())
-
+const authMiddleware = require("../middleware/auth.middleware")
+const getCordinates=require("../utils/userCordinates")
 // Signup route
 router.post("/signup", async (req, res) => {
   try {
@@ -75,6 +74,27 @@ router.post("/signin", async (req, res) => {
     res.status(500).json({ message: "Error signing in", error: error.message });
   }
 });
+router.post("/add-address", authMiddleware, async (req, res) => {
+  try {
+    const { address, pincode } = req.body;
+    const user = req.user.id;
+    const coordinate=await getCordinates(address,pincode)
+
+    const addingDetails = await prisma.user.update({
+      where: { id: user },
+      data: { Address:[address],pincode:pincode,lat: coordinate.lat, long: coordinate.lng }
+    });
+    res.send(null)
+  } catch (error) {
+    console.error("Error fetching coordinates:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 
-module.exports=router
+
+module.exports = router
+
+// Address   String[] //to add more than one address
+// lang      String?
+// long      String?

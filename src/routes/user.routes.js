@@ -89,7 +89,6 @@ router.post("/return",authMiddleware, async (req, res) => {
                 items:true
             }
         })
-        // const article=findorderId.items.find((id) => id.id ===idArticle)
         const article = findorderId.items.find((item) => item.id === idArticle);
         if(article.qty<qty){
             return res.send("qty returned cannot be more than ordered")
@@ -107,8 +106,6 @@ router.post("/return",authMiddleware, async (req, res) => {
         const data=await prisma.user.findUnique({
             where:{id:userId}
         })
-        console.log(data.lang)
-
         // send kafka
         const response=await kafka.returnProduction(data.lang,data.long,userId,orderId)
         res.status(201).json({ message: "Return processed", returnedItem });
