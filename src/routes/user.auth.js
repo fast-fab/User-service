@@ -12,7 +12,7 @@ router.post("/signup", async (req, res) => {
     const { email, password } = req.body;
 
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email},
     });
 
     if (existingUser) {
@@ -78,13 +78,32 @@ router.post("/add-address", authMiddleware, async (req, res) => {
   try {
     const { address, pincode } = req.body;
     const user = req.user.id;
-    const coordinate=await getCordinates(address,pincode)
-
+    
+    if (!address) {
+      return res.status(400).json({ error: "Address is required" });
+    }
+    
+    if (!pincode) {
+      return res.status(400).json({ error: "Pincode is required" });
+    }
+    
+    const coordinate = await getCordinates(address, pincode);
+    
+    if (coordinate.error) {
+      return res.status(400).json({ error: coordinate.error });
+    }
+    
     const addingDetails = await prisma.user.update({
       where: { id: user },
-      data: { Address:[address],pincode:pincode,lat: coordinate.lat, long: coordinate.lng }
+      data: { 
+        Address: [address],
+        pincode: Number(pincode),
+        lat: coordinate.lat, 
+        long: coordinate.lng 
+      }
     });
-    res.send(null)
+    
+    res.status(200).json({ message: "Address added successfully" });
   } catch (error) {
     console.error("Error fetching coordinates:", error);
     res.status(500).json({ error: "Internal server error" });

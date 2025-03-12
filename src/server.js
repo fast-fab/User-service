@@ -8,3 +8,4 @@ app.use("/api/user/auth",authRoutes)
 app.use("/api/user/service",serviceRoutes)
 
 app.listen(3000)
+console.log("Server is running on port 3000")
